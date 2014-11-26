@@ -99,6 +99,11 @@ public class EmbeddedRunner extends Runner<EmbeddedRunner> {
 
   @Override
   protected void doExecute() {
-    batchLauncher.execute(properties(), extensions);
+
+    java.util.Properties props = properties();
+
+    props.putAll(System.getProperties());
+
+    batchLauncher.execute(props, extensions);
   }
 }
