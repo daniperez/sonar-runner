@@ -32,12 +32,19 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.net.CookieHandler;
+
+
 class ServerConnection {
 
   private static final String SONAR_SERVER_CAN_NOT_BE_REACHED = "Sonar server ''{0}'' can not be reached";
   private static final String STATUS_RETURNED_BY_URL_IS_INVALID = "Status returned by url : ''{0}'' is invalid : {1}";
   static final int CONNECT_TIMEOUT_MILLISECONDS = 30000;
   static final int READ_TIMEOUT_MILLISECONDS = 60000;
+  // left here for reference. Not tested.
+  static final boolean USE_COOKIES = false;
   private static final Pattern CHARSET_PATTERN = Pattern.compile("(?i)\\bcharset=\\s*\"?([^\\s;\"]*)");
 
   private final String serverUrl;
@@ -46,6 +53,11 @@ class ServerConnection {
   private ServerConnection(String serverUrl, String app, String appVersion) {
     this.serverUrl = removeEndSlash(serverUrl);
     this.userAgent = app + "/" + appVersion;
+    if (USE_COOKIES) {
+        CookieManager customCookieManager = new CookieManager();
+        customCookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
+        CookieHandler.setDefault(customCookieManager);
+    }
   }
 
   private String removeEndSlash(String url) {
@@ -112,7 +124,12 @@ class ServerConnection {
     request.acceptGzipEncoding().uncompress(true);
     request.connectTimeout(CONNECT_TIMEOUT_MILLISECONDS).readTimeout(READ_TIMEOUT_MILLISECONDS);
     request.userAgent(userAgent);
-    return request;
+    if (USE_COOKIES) {
+        return request.followRedirects(true);
+    }
+    else {
+        return request;
+    }
   }
 
   /**
